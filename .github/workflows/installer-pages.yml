@@ -34,7 +34,7 @@ jobs:
           digest=$(jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<< "$asset")
           sha256=${digest#sha256:}
           id=$(jq -er '.id' <<< "$asset")
-          public_url='https://ashumakov0404-spec.github.io/cloud-drive-downloader-downloads'
+          public_url="https://${GITHUB_REPOSITORY%/*}.github.io/${GITHUB_REPOSITORY#*/}"
           if [[ "$GITHUB_EVENT_NAME" == schedule ]] && published=$(curl --silent --fail --max-time 15 "$public_url/installer.sha256") && [[ "$published" == "$sha256" ]]; then
             echo 'The latest installer is already published.'
             exit 0
