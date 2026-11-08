@@ -4,7 +4,7 @@
 
 Disk Downloader скачивает файлы с Яндекс Диска и Google Диска на Windows. Можно забрать целую папку, поставить несколько папок в очередь или выбрать отдельные файлы и хранить их на компьютере.
 
-**[Скачать установщик для Windows x64](https://ashumakov0404-spec.github.io/cloud-drive-downloader-downloads/DiskDownloader-Setup.exe)** · [Выпуски и ZIP](https://github.com/ashumakov0404-spec/cloud-drive-downloader-downloads/releases/latest)
+**[Скачать установщик для Windows x64](https://ashumakov0404-spec.github.io/disk-downloader/DiskDownloader-Setup.exe)** · [Выпуски и ZIP](https://github.com/ashumakov0404-spec/disk-downloader/releases/latest)
 
 <img src="interface.png" alt="Главное окно Disk Downloader с полями источников и папки сохранения" width="640">
 
