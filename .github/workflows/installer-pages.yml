@@ -1,0 +1,71 @@
+name: Publish direct installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/installer-pages.yml]
+  schedule:
+    - cron: '23 * * * *'
+
+permissions: {}
+
+concurrency:
+  group: direct-installer-pages
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.installer.outputs.publish }}
+    steps:
+      - name: Download and verify the latest installer
+        id: installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest")
+          asset=$(jq -cer '[.assets[] | select(.name == "DiskDownloader-Setup.exe" and .state == "uploaded")] | if length == 1 then .[0] else error("Expected one uploaded installer") end' <<< "$release")
+          digest=$(jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<< "$asset")
+          sha256=${digest#sha256:}
+          id=$(jq -er '.id' <<< "$asset")
+          public_url='https://ashumakov0404-spec.github.io/cloud-drive-downloader-downloads'
+          if [[ "$GITHUB_EVENT_NAME" == schedule ]] && published=$(curl --silent --fail --max-time 15 "$public_url/installer.sha256") && [[ "$published" == "$sha256" ]]; then
+            echo 'The latest installer is already published.'
+            exit 0
+          fi
+          mkdir site
+          target=site/DiskDownloader-Setup.exe
+          curl --fail --silent --show-error --location --retry 3 --max-time 90 \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/octet-stream' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/assets/$id" --output "$target"
+          printf '%s  %s\n' "$sha256" "$target" | sha256sum --check
+          printf '%s\n' "$sha256" > site/installer.sha256
+          printf 'publish=true\n' >> "$GITHUB_OUTPUT"
+      - name: Package the verified installer
+        if: steps.installer.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: site
+
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish the installer
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
